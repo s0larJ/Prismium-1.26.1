@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "prismium",
+  "key": {
+    "C": "minecraft:prismarine_crystals",
+    "G": "minecraft:gold_ingot",
+    "N": "minecraft:netherite_scrap",
+    "S": "minecraft:prismarine_shard"
+  },
+  "pattern": [
+    "SGC",
+    "GNG",
+    "CGS"
+  ],
+  "result": {
+    "id": "prismium:prismium"
+  }
+}
