@@ -1,6 +1,5 @@
 package net.s0larj.prismium.entity.custom;
 
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -8,7 +7,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.s0larj.prismium.entity.ModEntityTypes;
@@ -17,7 +15,6 @@ import org.joml.Vector2f;
 public class AnchorProjectileEntity extends AbstractArrow {
 
     private Entity hookedEntity;
-    public Vector2f groundedOffset;
 
     public AnchorProjectileEntity(EntityType<? extends AbstractArrow> type, Level level) {
         super(type, level);
