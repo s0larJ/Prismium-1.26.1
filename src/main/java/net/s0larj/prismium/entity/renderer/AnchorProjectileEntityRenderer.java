@@ -28,8 +28,8 @@ public class AnchorProjectileEntityRenderer extends EntityRenderer<AnchorProject
     @Override
     public void submit(AnchorProjectileEntityRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
         poseStack.pushPose();
-        poseStack.mulPose(Axis.YP.rotationDegrees(state.yRot));
-        poseStack.mulPose(Axis.ZP.rotationDegrees(state.xRot));
+        poseStack.mulPose(Axis.YP.rotationDegrees(state.yRot+180.0F));
+        poseStack.mulPose(Axis.XP.rotationDegrees(state.xRot));
         submitNodeCollector.submitModel(this.model, state, poseStack, TEXTURE, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor, (ModelFeatureRenderer.CrumblingOverlay)null);
         poseStack.popPose();
         super.submit(state, poseStack, submitNodeCollector, camera);
