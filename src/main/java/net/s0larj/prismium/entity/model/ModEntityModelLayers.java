@@ -15,6 +15,6 @@ public class ModEntityModelLayers {
     }
 
     public static void registerModelLayers() {
-        ModelLayerRegistry.registerModelLayer(ModEntityModelLayers.ANCHOR_PROJECTILE, EntityModel::);
+        ModelLayerRegistry.registerModelLayer(ModEntityModelLayers.ANCHOR_PROJECTILE, AnchorProjectileEntityModel::createBodyLayer);
     }
 }
