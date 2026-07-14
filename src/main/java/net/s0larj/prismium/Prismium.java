@@ -29,11 +29,6 @@ public class Prismium implements ModInitializer {
 		ModBlocks.registerModBlocks();
 		ModEntityTypes.registerModEntityTypes();
 		ModDataComponents.registerDataCompontents();
-
-		LivingEntityRenderLayerRegistrationCallback.EVENT.register((entityType, entityRenderer,
-																	 registrationHelper, context) -> {
-
-		});
 	}
 
 }
