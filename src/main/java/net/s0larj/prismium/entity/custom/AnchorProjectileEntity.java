@@ -1,6 +1,9 @@
 package net.s0larj.prismium.entity.custom;
 
+import com.mojang.datafixers.util.Pair;
+import net.minecraft.Optionull;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Util;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -12,8 +15,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.s0larj.prismium.Prismium;
+import net.s0larj.prismium.attachment.AnchorAttachment;
 import net.s0larj.prismium.entity.ModEntityTypes;
 import org.joml.Vector2f;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Function;
 
 import static net.s0larj.prismium.attachment.ModAttachments.HOOKED;
 
@@ -85,7 +94,13 @@ public class AnchorProjectileEntity extends AbstractArrow {
             //set hooked to mob that was hit
             if(entity.isAlive()){
                 this.hookedEntity = entity;
-                this.hookedEntity.setAttached(HOOKED, true);
+                this.hookedEntity.setAttached(HOOKED, List.copyOf(Util.make(new ArrayList<>(), (l) -> {
+                    l.addAll(this.hookedEntity.getAttachedOrElse(HOOKED, List.of()));
+                    l.add(new AnchorAttachment(this.getUUID(), hitResult.getLocation().subtract(this.hookedEntity.position()), this.getXRot(), this.getYRot()));
+                    IO.println("hit" + hitResult.getLocation());
+                    IO.println("hooked" + this.hookedEntity.position());
+                    IO.println("diff" + hitResult.getLocation().subtract(this.hookedEntity.position()));
+                })));
                 this.setNoGravity(true);
             }
         }
@@ -99,6 +114,10 @@ public class AnchorProjectileEntity extends AbstractArrow {
     public void pull(){
         Entity player = this.getOwner();
         if (this.hookedEntity != null) {
+            this.hookedEntity.setAttached(HOOKED, List.copyOf(Util.make(new ArrayList<>(), (l) -> {
+                l.addAll(this.hookedEntity.getAttachedOrElse(HOOKED, List.of()));
+                l.removeIf(anchorAttachment -> anchorAttachment.uuid().equals(this.getUUID()));
+            })));
             Vec3 vec3d = new Vec3(player.getX() - this.getX(), player.getY() - this.getY(), player.getZ() - this.getZ()).scale(0.3);
             this.hookedEntity.setDeltaMovement(this.hookedEntity.getDeltaMovement().add(vec3d));
         }

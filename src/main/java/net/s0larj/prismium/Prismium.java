@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.EntityType;
+import net.s0larj.prismium.attachment.ModAttachments;
 import net.s0larj.prismium.block.ModBlocks;
 import net.s0larj.prismium.creativemodetab.ModCreativeModeTabs;
 import net.s0larj.prismium.data.ModDataComponents;
@@ -34,11 +35,7 @@ public class Prismium implements ModInitializer {
 		ModBlocks.registerModBlocks();
 		ModEntityTypes.registerModEntityTypes();
 		ModDataComponents.registerDataCompontents();
-		ModEntityModelLayers.registerModelLayers();
-
-		LivingEntityRenderLayerRegistrationCallback.EVENT.register((entityType, entityRenderer, registrationHelper, context) -> {
-			registrationHelper.register(new );
-		});
+		ModAttachments.registerModAttachments();
 	}
 
 }

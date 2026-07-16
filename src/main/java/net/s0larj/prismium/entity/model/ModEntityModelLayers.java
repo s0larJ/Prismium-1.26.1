@@ -1,7 +1,9 @@
 package net.s0larj.prismium.entity.model;
 
 import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.resources.Identifier;
 
 import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;

@@ -15,7 +15,7 @@ import net.s0larj.prismium.entity.state.AnchorProjectileEntityRenderState;
 
 public class AnchorProjectileEntityModel extends EntityModel<AnchorProjectileEntityRenderState> {
 	// This layer location should be baked with EntityRendererProvider.Context in the entity renderer and passed into this model's constructor
-	public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(Identifier.fromNamespaceAndPath(Prismium.MOD_ID, "anchor_projectile.png"), "main");
+	public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(Identifier.fromNamespaceAndPath(Prismium.MOD_ID, "textures/entity/anchor_projectile.png"), "main");
 	private final ModelPart bb_main;
 
 	public AnchorProjectileEntityModel(ModelPart root) {
