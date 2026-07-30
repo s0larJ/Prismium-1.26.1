@@ -6,8 +6,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ToolMaterial;
 import net.s0larj.prismium.Prismium;
 import net.s0larj.prismium.item.custom.AnchorItem;
 
@@ -15,7 +17,8 @@ import java.util.function.Function;
 
 public class ModItems {
     public static final Item PRISMIUM = registerItem("prismium", Item::new);
-    public static final Item ANCHOR = registerItem("anchor_item", properties -> new AnchorItem(properties.durability(32)));
+    public static final Item ANCHOR = registerItem("anchor_item", properties -> new AnchorItem(properties.tool(
+            ToolMaterial.NETHERITE, BlockTags.MINEABLE_WITH_PICKAXE, 5.0F, -3.0F, 5.0F)));
 
     private static Item registerItem(String name, Function<Item.Properties, Item> function) {
         return Registry.register(BuiltInRegistries.ITEM, Identifier.fromNamespaceAndPath(Prismium.MOD_ID, name),

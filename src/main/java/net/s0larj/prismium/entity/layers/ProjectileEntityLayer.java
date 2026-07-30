@@ -23,21 +23,29 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.util.Util;
 import net.minecraft.world.phys.Vec3;
 import net.s0larj.prismium.attachment.AnchorAttachment;
+import net.s0larj.prismium.attachment.AnchorDebugData;
 import net.s0larj.prismium.entity.ModCustomEntityClient;
 import net.s0larj.prismium.mixin.ModelPartAccessorMixin;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 @Environment(EnvType.CLIENT)
 public abstract class ProjectileEntityLayer<M extends LivingEntityRenderState, S> extends RenderLayer<M, EntityModel<EntityRenderState>> {
+
+    private static final Set<UUID> DEBUG_PRINTED = new HashSet<>();
+
+    //Model that will be rendered on the entity.
     private final Model<S> model;
+    // Render state used by the anchor model.
     private final S modelState;
+    // Texture used by the anchor model.
     private final Identifier texture;
+    //Currently unused, but kept in case different placement behavior is added later.
     private final PlacementStyle placementStyle;
 
-    public ProjectileEntityLayer(final LivingEntityRenderer<?, M, EntityModel<EntityRenderState>> renderer, final Model<S> model, final S modelState, final Identifier texture, final PlacementStyle placementStyle) {
+    public ProjectileEntityLayer(LivingEntityRenderer<?, M, EntityModel<EntityRenderState>> renderer, Model<S> model, S modelState,
+                                 Identifier texture, PlacementStyle placementStyle) {
         super(renderer);
         this.model = model;
         this.modelState = modelState;
@@ -45,93 +53,283 @@ public abstract class ProjectileEntityLayer<M extends LivingEntityRenderState, S
         this.placementStyle = placementStyle;
     }
 
-    protected abstract List<AnchorAttachment> numStuck(final LivingEntityRenderState state);
+    // The subclass provides the list of anchors currently attached to the rendered entity.
+    protected abstract List<AnchorAttachment> numStuck(LivingEntityRenderState state);
 
-    private void submitStuckItem(final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final float directionX, final float directionY, final float directionZ, final int outlineColor) {
-        float directionXZ = Mth.sqrt(directionX * directionX + directionZ * directionZ);
-        float yRot = (float)(Math.atan2((double)directionX, (double)directionZ) * (double)(180F / (float)Math.PI));
-        float xRot = (float)(Math.atan2((double)directionY, (double)directionXZ) * (double)(180F / (float)Math.PI));
-        poseStack.mulPose(Axis.YP.rotationDegrees(yRot - 90.0F));
-        poseStack.mulPose(Axis.ZP.rotationDegrees(xRot));
-        submitNodeCollector.submitModel(this.model, this.modelState, poseStack, this.texture, lightCoords, OverlayTexture.NO_OVERLAY, outlineColor, (ModelFeatureRenderer.CrumblingOverlay)null);
-    }
+    double anchorPivotOffset = 0.20D; // Aligns the anchor’s visible tip with the hit point instead of its model origin
 
-    public void submit(final PoseStack poseStack, final SubmitNodeCollector submitNodeCollector, final int lightCoords, final LivingEntityRenderState state, final float yRot, final float xRot) {
+
+    public void submit(
+            PoseStack poseStack,
+            SubmitNodeCollector submitNodeCollector,
+            int lightCoords,
+            LivingEntityRenderState state,
+            float yRot,
+            float xRot
+    ) {
         List<AnchorAttachment> projectiles = this.numStuck(state);
-        if (!projectiles.isEmpty()) {
-            RandomSource random = RandomSource.createThreadLocalInstance(Objects.requireNonNull(state.getData(ModCustomEntityClient.ENTITY_ID)));
 
-            for (var projectile:projectiles) {
-                /*
-                poseStack.pushPose();
-                Vec3 projPos = projectile.pos().scale(16);
-                ModelPart closestPart = Util.getRandom(List.copyOf(Collections2.filter(this.getParentModel().allParts(), part -> !part.isEmpty())), random);
-                ModelPart.Cube closestCube = closestPart.getRandomCube(random);
-                Vec3 closestCubeVec3 = new Vec3(closestCube.minX , closestCube.minY, closestCube.minZ);
-                Vec3 closestPartVec3 = new Vec3(closestPart.x, closestPart.y, closestPart.z);
+        if (projectiles.isEmpty()) return;
 
-                for (var modelPart:List.copyOf(Collections2.filter(this.getParentModel().allParts(), part -> !part.isEmpty()))) {
-                    Vec3 modelVec3 = new Vec3(modelPart.x, modelPart.y, modelPart.z);
-                    for (var cube:((ModelPartAccessorMixin) (Object) modelPart).prismium$getCubes()) {
+        for (AnchorAttachment projectile : projectiles) {
+            poseStack.pushPose();
 
-                        Vec3 cubeVec3 = new Vec3(cube.minX, cube.minY, cube.minZ);
+            AnchorDebugData server = projectile.debug();
+            Vec3 localPosition = projectile.pos();
 
-                        if(projPos.closerThan(cubeVec3.subtract(modelVec3), projPos.distanceToSqr(closestCubeVec3.add(closestPartVec3)))){
-                            closestCube = cube;
-                            closestCubeVec3 = cubeVec3;
-                            closestPart = modelPart;
-                            closestPartVec3 = modelVec3;
-                        }
-                    }
+            double hitHeight = localPosition.y * state.boundingBoxHeight;
 
-                }
-                projPos = projPos.add(closestCubeVec3);
-                projPos = new Vec3(projPos.x / 16.0F, projPos.y / 16.0F, projPos.z / 16.0F);
-                closestPart.translateAndRotate(poseStack);
-                poseStack.translate(Mth.lerp(projPos.x(), closestCube.minX, closestCube.maxX) / 16.0F, Mth.lerp(projPos.y(), closestCube.minY, closestCube.maxY) / 16.0F, Mth.lerp(projPos.z(), closestCube.minZ, closestCube.maxZ) / 16.0F);
-                //poseStack.translate(projectile.pos().x() ,projectile.pos().y() , projectile.pos().z());
-                this.submitStuckItem(poseStack, submitNodeCollector, lightCoords, 0, 0, 0, state.outlineColor);
-                poseStack.popPose();
+            double modelOriginY = -EntityModel.MODEL_Y_OFFSET;
 
-                 */
+            double renderX = localPosition.x;
+            double renderY = modelOriginY - hitHeight - anchorPivotOffset;
+            double renderZ = -localPosition.z;
 
-                poseStack.pushPose();
-                ModelPart modelPart = Util.getRandom(List.copyOf(Collections2.filter(this.getParentModel().allParts(), part -> !part.isEmpty())), random);
-                ModelPart.Cube cube = modelPart.getRandomCube(random);
-                modelPart.translateAndRotate(poseStack);
-                float midX = random.nextFloat();
-                float midY = random.nextFloat();
-                float midZ = random.nextFloat();
-                if (this.placementStyle == ProjectileEntityLayer.PlacementStyle.ON_SURFACE) {
-                    int plane = random.nextInt(3);
-                    switch (plane) {
-                        case 0:
-                            midX = snapToFace(midX);
-                            break;
-                        case 1:
-                            midY = snapToFace(midY);
-                            break;
-                        default:
-                            midZ = snapToFace(midZ);
-                    }
-                }
+            float directionX = (float) -localPosition.x;
+            float directionZ = (float) localPosition.z;
 
-                poseStack.translate(
-                        Mth.lerp(midX, cube.minX, cube.maxX) / 16.0F, Mth.lerp(midY, cube.minY, cube.maxY) / 16.0F, Mth.lerp(midZ, cube.minZ, cube.maxZ) / 16.0F
+            float hookYaw = (float) Math.toDegrees(Math.atan2(directionX, directionZ));
+
+            float finalYaw = hookYaw + 180.0F;
+            float finalPitch = projectile.xRot();
+            float finalRoll = 0.0F;
+
+            if (DEBUG_PRINTED.add(projectile.uuid())) {
+                System.out.printf("""
+            
+                        ============================ ANCHOR DEBUG ============================
+                        
+                        IDENTITY
+                        Entity type:       %s
+                        Entity class:      %s
+                        Entity UUID:       %s
+                        Entity numeric ID: %d
+                        
+                        ANCHOR
+                        Anchor UUID:   %s
+                        Attachment count:  %d
+                        Render-state class:%s
+                        
+                        STATUS
+                        Alive:             %s
+                        Invulnerable:      %s
+                        Owner distance:    %.4f
+                        
+                        ENTITY SIZE
+                        Server width:      %.4f
+                        Server height:     %.4f
+                        Client height:     %.4f
+                        Eye height:        %.4f
+                        
+                        %-25s | %12s | %12s | %12s
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        
+                        BOUNDING BOX
+                        %-25s | %12s | %12s | %12s
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        
+                        HEIGHT CALCULATION
+                        Raw hit height:             %.4f
+                        Saved hit percentage:       %.4f
+                        Client calculated height:   %.4f
+                        Model origin Y:             %.4f
+                        Anchor pivot offset:        %.4f
+                        Horizontal center distance: %.4f
+                        
+                        %-25s | %12s | %12s | %12s
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        
+                        ROTATION
+                        %-25s | %12s | %12s | %12s
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        %-25s | %12.4f | %12.4f | %12.4f
+                        
+                        DIRECTION CALCULATION
+                        Direction X:    %.4f
+                        Direction Z:    %.4f
+                        Anchor Yaw:     %.4f
+                        
+                        ======================================================================
+                        %n""",
+
+                        server.entityType(),
+                        server.entityClass(),
+                        server.entityUuid(),
+                        server.entityId(),
+                        projectile.uuid(),
+                        projectiles.size(),
+                        state.getClass().getName(),
+
+                        server.entityAlive(),
+                        server.entityInvulnerable(),
+                        server.ownerDistance(),
+
+                        server.entityWidth(),
+                        server.entityHeight(),
+                        state.boundingBoxHeight,
+                        server.eyeHeight(),
+
+                        "POSITION", "X", "Y", "Z",
+
+                        "Entity world",
+                        server.entityPosition().x,
+                        server.entityPosition().y,
+                        server.entityPosition().z,
+
+                        "Anchor World",
+                        server.worldHitPosition().x,
+                        server.worldHitPosition().y,
+                        server.worldHitPosition().z,
+
+                        "Offset",
+                        server.worldOffset().x,
+                        server.worldOffset().y,
+                        server.worldOffset().z,
+
+                        "Server saved local",             // The hit position rotated into the entity’s local coordinate system.
+                        server.localHitPosition().x,      // The local position received from the server; this should match
+                        server.localHitPosition().y,
+                        server.localHitPosition().z,
+
+                        "Client received local",
+                        localPosition.x,
+                        localPosition.y,
+                        localPosition.z,
+
+                        "Projectile world",               // Projectile’s world position when the information was recorded.
+                        server.projectilePosition().x,
+                        server.projectilePosition().y,
+                        server.projectilePosition().z,
+
+                        "Final model render",             // Local position where the anchor model is actually drawn.
+                        renderX,
+                        renderY,
+                        renderZ,
+
+                        "Bounding box center",
+                        (server.boundingBoxMin().x + server.boundingBoxMax().x) / 2.0D,
+                        (server.boundingBoxMin().y + server.boundingBoxMax().y) / 2.0D,
+                        (server.boundingBoxMin().z + server.boundingBoxMax().z) / 2.0D,
+
+                        "BOUNDING BOX", "X", "Y", "Z",
+
+                        "Minimum",
+                        server.boundingBoxMin().x,
+                        server.boundingBoxMin().y,
+                        server.boundingBoxMin().z,
+
+                        "Maximum",
+                        server.boundingBoxMax().x,
+                        server.boundingBoxMax().y,
+                        server.boundingBoxMax().z,
+
+                        "Dimensions",
+                        server.boundingBoxMax().x - server.boundingBoxMin().x,
+                        server.boundingBoxMax().y - server.boundingBoxMin().y,
+                        server.boundingBoxMax().z - server.boundingBoxMin().z,
+
+                        server.worldOffset().y,                     // Hit’s height above the entity’s feet.
+                        server.hitHeightPercent(),                  // Hit height divided by the entity’s total height.
+                        hitHeight,                                  //
+                        modelOriginY,                               // Vertical origin used when rendering models.
+                        anchorPivotOffset,                          // Correction for the origin point inside the anchor model
+                        server.horizontalDistanceFromCenter(),      // Horizontal distance from the hit to the entity’s center.
+
+                        "VELOCITY", "X", "Y", "Z",
+
+                        "Entity velocity",
+                        server.entityVelocity().x,
+                        server.entityVelocity().y,
+                        server.entityVelocity().z,
+
+                        "Projectile velocity",
+                        server.projectileVelocity().x,
+                        server.projectileVelocity().y,
+                        server.projectileVelocity().z,
+
+                        "Direction toward center",
+                        directionX,
+                        0.0F,
+                        directionZ,
+
+                        "Render position",
+                        renderX,
+                        renderY,
+                        renderZ,
+
+                        "Saved local position",
+                        localPosition.x,
+                        localPosition.y,
+                        localPosition.z,
+
+                        "ROTATION", "Yaw", "Pitch", "Roll",
+
+                        "Entity",
+                        server.entityYaw(),
+                        server.entityPitch(),
+                        0.0F,
+
+                        "Body / head",
+                        server.bodyYaw(),
+                        0.0F,
+                        server.headYaw(),
+
+                        "Projectile",
+                        server.projectileYaw(),
+                        server.projectilePitch(),
+                        0.0F,
+
+                        "Client final",        // Final rotation applied to the rendered anchor model.
+                        finalYaw,
+                        finalPitch,
+                        finalRoll,
+
+                        directionX,            // The X component pointing from the hit toward the entity’s center.
+                        directionZ,            // The z component pointing from the hit toward the entity’s center.
+                        hookYaw                // The horizontal angle calculated from the direction values.
                 );
-                this.submitStuckItem(poseStack, submitNodeCollector, lightCoords, -(midX * 2.0F - 1.0F), -(midY * 2.0F - 1.0F), -(midZ * 2.0F - 1.0F), state.outlineColor);
-                poseStack.popPose();
             }
+
+            poseStack.translate(renderX, renderY, renderZ);
+
+            poseStack.mulPose(Axis.YP.rotationDegrees(finalYaw));
+            poseStack.mulPose(Axis.XP.rotationDegrees(finalPitch));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(finalRoll));
+
+            submitNodeCollector.submitModel(
+                    this.model,
+                    this.modelState,
+                    poseStack,
+                    this.texture,
+                    lightCoords,
+                    OverlayTexture.NO_OVERLAY,
+                    state.outlineColor,
+                    null
+            );
+
+            poseStack.popPose();
         }
     }
 
-    private static float snapToFace(final float value) {
-        return value > 0.5F ? 1.0F : 0.5F;
-    }
 
     @Environment(EnvType.CLIENT)
-    public static enum PlacementStyle {
+    public enum PlacementStyle {
         IN_CUBE,
-        ON_SURFACE;
+        ON_SURFACE
     }
 }

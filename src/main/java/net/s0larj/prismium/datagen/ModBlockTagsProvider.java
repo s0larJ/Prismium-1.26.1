@@ -16,13 +16,14 @@ public class ModBlockTagsProvider extends FabricTagsProvider.BlockTagsProvider {
 
     @Override
     protected void addTags(HolderLookup.Provider provider) {
-        valueLookupBuilder(BlockTags.MINEABLE_WITH_PICKAXE)
-                .add(ModBlocks.PRISMIUM_BLOCK)
-                .add(ModBlocks.TEMP);
 
-        valueLookupBuilder(BlockTags.NEEDS_DIAMOND_TOOL)
-                .add(ModBlocks.PRISMIUM_BLOCK)
-                .add(ModBlocks.TEMP);
+        builder(BlockTags.MINEABLE_WITH_PICKAXE)
+                .add(ModBlocks.getRK(ModBlocks.PRISMIUM_BLOCK))
+                .add(ModBlocks.getRK(ModBlocks.TEMP));
+
+        builder(BlockTags.NEEDS_DIAMOND_TOOL)
+                .add(ModBlocks.getRK(ModBlocks.PRISMIUM_BLOCK))
+                .add(ModBlocks.getRK(ModBlocks.TEMP));
 
     }
 }

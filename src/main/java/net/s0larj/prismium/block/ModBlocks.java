@@ -24,6 +24,10 @@ public class ModBlocks {
             properties -> new Block(properties.strength(4f)
                     .requiresCorrectToolForDrops().sound(SoundType.IRON)));
 
+    public static ResourceKey<Block> getRK(Block block) {
+        return BuiltInRegistries.BLOCK.getResourceKey(block).get();
+    }
+
     private static Block registerBlock(String name, Function<BlockBehaviour.Properties, Block> function){
         Block toRegister = function.apply(BlockBehaviour.Properties.of()
                 .setId(ResourceKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(Prismium.MOD_ID, name))));
