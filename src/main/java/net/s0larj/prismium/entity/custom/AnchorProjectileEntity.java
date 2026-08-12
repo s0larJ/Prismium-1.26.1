@@ -16,6 +16,7 @@ import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.s0larj.prismium.Prismium;
@@ -380,6 +381,21 @@ public class AnchorProjectileEntity extends AbstractArrow {
         }
 
         return new EntityHitResult(closestEntity, closestHitPosition);
+    }
+
+    @Override
+    protected void onHitBlock(BlockHitResult hitResult) {
+        super.onHitBlock(hitResult);
+        AABB aoe = this.getBoundingBox().inflate(0.5d);
+        for (Entity entity : this.level().getEntities(this, aoe, entity ->
+                entity != this.getOwner() && entity.isAlive() && entity.canBeHitByProjectile())) {
+
+            if (this.level() instanceof ServerLevel serverLevel) {
+                // Hurt the entity that is in the AOE.
+                entity.hurtServer(serverLevel, this.damageSources().thrown(this, this.getPlayerOwner()), 4.0F);
+            }
+        }
+
     }
 
     // Returns true after the projectile has attached to an entity.

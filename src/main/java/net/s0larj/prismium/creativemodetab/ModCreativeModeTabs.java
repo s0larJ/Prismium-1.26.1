@@ -22,6 +22,7 @@ public class ModCreativeModeTabs {
                         output.accept(ModBlocks.PRISMIUM_BLOCK);
                         output.accept(ModBlocks.TEMP);
                         output.accept(ModItems.ANCHOR);
+                        output.accept(ModItems.SEASTAFF);
                     }).build());
 
     public static void registerModCreativeModeTabs() {
