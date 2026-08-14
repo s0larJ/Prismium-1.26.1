@@ -103,13 +103,13 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
                     if( longitude != 0 && latitude != 0){
                         lx = x;
                         ly = y;
-                        vertices.add(longitude, new Pair<>(lx, ly));
+                        x = xy * Mth.cos(sectorAngle);             // r * cos(u) * cos(v)
+                        y = xy * Mth.sin(sectorAngle);             // r * cos(u) * sin(v)
+                        vertices.add(longitude, new Pair<>(x, y));
                         ilx = lVertices.get(longitude - 1).getA();
                         ily = lVertices.get(longitude - 1).getB();
                         ix = lVertices.get(longitude).getA();
                         iy = lVertices.get(longitude).getB();
-                        x = xy * Mth.cos(sectorAngle);             // r * cos(u) * cos(v)
-                        y = xy * Mth.sin(sectorAngle);             // r * cos(u) * sin(v)
                         //make a quad by connecting the points, k1 -> k2 -> k2 + 1 -> k1 + 1
                         vertex(buffer, pose, state.lightCoords, ilx, ily, lz);
                         vertex(buffer, pose, state.lightCoords, lx, ly, z);
@@ -118,15 +118,15 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
                     }else{
                         x = xy * Mth.cos(sectorAngle);             // r * cos(u) * cos(v)
                         y = xy * Mth.sin(sectorAngle);             // r * cos(u) * sin(v)
-                        lVertices.add(longitude,new Pair<>(x, y));
+                        vertices.add(longitude, new Pair<>(x, y));
                     }
 
                     // vertex tex coord (s, t) range between [0, 1]
                     s = (float) longitude / sectorCount;
                     t = (float) latitude / stackCount;
                 }
-                vertices = lVertices;
-                lVertices.clear();
+                lVertices = vertices;
+                vertices.clear();
             }
 
 
