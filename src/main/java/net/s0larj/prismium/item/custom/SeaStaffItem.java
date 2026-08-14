@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -16,6 +17,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.s0larj.prismium.Prismium;
+import net.s0larj.prismium.entity.custom.SphereEntity;
 
 import java.util.List;
 
@@ -24,6 +27,8 @@ public class SeaStaffItem extends Item {
     public SeaStaffItem(Properties properties) {
         super(properties);
     }
+
+    public SphereEntity sphereEntity;
 
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
@@ -45,13 +50,24 @@ public class SeaStaffItem extends Item {
                     if (level instanceof ServerLevel serverLevel) {
                         // Hurt the entity that is in the AOE.
                         entity.hurtServer(serverLevel, livingEntity.damageSources().magic(), 4.0f);
+
+                        //knockback entity
+                        entity.addDeltaMovement(livingEntity.position().vectorTo(entity.position()).normalize().multiply(2, 2, 2));
                     }
                 }
 
                 if (level instanceof ServerLevel serverLevel) {
                     //create particle sphere?
-                    particleSphere(serverLevel, livingEntity, aoe, ParticleTypes.HEART, 9);
+                    //particleSphere(serverLevel, livingEntity, aoe, ParticleTypes.HEART, 3);
+
+                    sphereEntity = new SphereEntity(level);
+                    sphereEntity.setPos(livingEntity.position());
+                    level.addFreshEntity(sphereEntity);
                 }
+
+
+
+
 
                 level.playSound(
                         null,
@@ -71,12 +87,19 @@ public class SeaStaffItem extends Item {
     }
 
     public static void particleSphere(Level level, LivingEntity livingEntity, AABB aabb, SimpleParticleType particleType, int radius){
-        for(double x = aabb.minX; x <= aabb.maxX; x +=0.1){
-            for(double y = aabb.minY; y <= aabb.maxY; y +=0.1){
-                for(double z = aabb.minZ; z <= aabb.maxZ; z +=0.1){
-                    if(livingEntity.distanceToSqr(x, y, z) == radius && level instanceof ServerLevel serverLevel){
-                        serverLevel.addParticle(particleType, x, y, z, 0, 0, 0);
-                    }
+        float i = 5;
+        double x;
+        double y;
+        double z;
+        //xRot is phi
+        for (float xRot = -90; xRot <= 90; xRot += i){
+            //yRot is theta
+            for (float yRot = -180; yRot <= 180; yRot += i){
+                y = Mth.sin(Math.toRadians(xRot)) * Mth.sin(Math.toRadians(yRot)) * radius;
+                x = Mth.sin(Math.toRadians(yRot)) * Mth.cos(Math.toRadians(xRot)) * radius;
+                z = Mth.cos(Math.toRadians(yRot)) * radius;
+                if(level instanceof ServerLevel serverLevel) {
+                    serverLevel.sendParticles(particleType, x + livingEntity.getX(), y + livingEntity.getY(), z + livingEntity.getZ(), 1, 0, 0, 0, 0);
                 }
             }
         }

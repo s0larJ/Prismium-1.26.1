@@ -11,6 +11,7 @@ import net.s0larj.prismium.entity.layers.AnchorProjectileEntityLayer;
 import net.s0larj.prismium.entity.model.ModEntityModelLayers;
 import net.s0larj.prismium.entity.renderer.AnchorProjectileEntityRenderer;
 import com.mojang.datafixers.util.Pair;
+import net.s0larj.prismium.entity.renderer.SphereEntityRenderer;
 import oshi.util.tuples.Triplet;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class ModCustomEntityClient implements ClientModInitializer {
         // #endregion register_client
         // #region register_renderer
         EntityRenderers.register(ModEntityTypes.ANCHOR_PROJECTILE, AnchorProjectileEntityRenderer::new);
+        EntityRenderers.register(ModEntityTypes.SPHERE_ENTITY, SphereEntityRenderer::new);
         // #endregion register_renderer
         // #region register_client
 

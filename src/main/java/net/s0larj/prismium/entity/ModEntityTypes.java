@@ -10,6 +10,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobCategory;
+import net.s0larj.prismium.entity.custom.SphereEntity;
 
 public class ModEntityTypes {
 
@@ -17,6 +18,12 @@ public class ModEntityTypes {
             "anchor_projectile",
             EntityType.Builder.<AnchorProjectileEntity>of(AnchorProjectileEntity::new, MobCategory.MISC)
                     .sized(0.5f,0.5f)
+    );
+
+    public static final EntityType<SphereEntity> SPHERE_ENTITY = registerEntity(
+            "sphere_entity",
+            EntityType.Builder.<SphereEntity>of(SphereEntity::new, MobCategory.MISC)
+                    .sized(0.1f, 0.1f)
     );
 
     private static <T extends Entity> EntityType<T> registerEntity (String name, EntityType.Builder<T> builder) {
