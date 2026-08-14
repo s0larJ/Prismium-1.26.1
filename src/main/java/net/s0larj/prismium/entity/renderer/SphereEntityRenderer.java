@@ -10,9 +10,14 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import net.s0larj.prismium.entity.custom.SphereEntity;
 import net.s0larj.prismium.entity.state.SphereEntityRenderState;
+import org.joml.Vector4f;
+import oshi.util.tuples.Pair;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEntityRenderState> {
@@ -35,7 +40,7 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
     public void submit(SphereEntityRenderState state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
         poseStack.pushPose();
         poseStack.scale(0.5f, 0.5f, 0.5f);
-        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.debugFilledBox(), (pose, buffer) -> {
+        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.debugQuads(), (pose, buffer) -> {
             //all calculations and code for sphere come from https://www.songho.ca/opengl/gl_sphere.html
 
             //radius of sphere
@@ -47,8 +52,20 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
             float z =0;
             float xy;
 
-            //vertex position of last vertex
+            //position of last vertex
             float lx, ly, lz;
+
+            //position of vertex from stack above
+            float ix, iy;
+
+            //position of last vertex from stack above
+            float ilx, ily;
+
+            //list of current stack vertices
+            List<Pair<Float, Float>> vertices = new ArrayList<>(List.of());
+
+            //list of previous stack vertices
+            List<Pair<Float, Float>> lVertices = new ArrayList<>(List.of());
 
             //texture coordinates, to put a 2d texture on the shape
             float s, t;
@@ -79,42 +96,39 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
                 // first and last vertices have same position and normal, but different tex coords
                 //sectors are east/west, aka longitude
                 for(int longitude = 0; longitude <= sectorCount; longitude++) {
+                    //makes all x and y for one z value then goes to next z or stack
                     sectorAngle = longitude * sectorStep;           // starting from 0 to 2pi
 
-                    // vertex position (x, y, z)
 
-                    if( longitude != 0){
+                    if( longitude != 0 && latitude != 0){
                         lx = x;
                         ly = y;
+                        vertices.add(longitude, new Pair<>(lx, ly));
+                        ilx = lVertices.get(longitude - 1).getA();
+                        ily = lVertices.get(longitude - 1).getB();
+                        ix = lVertices.get(longitude).getA();
+                        iy = lVertices.get(longitude).getB();
                         x = xy * Mth.cos(sectorAngle);             // r * cos(u) * cos(v)
                         y = xy * Mth.sin(sectorAngle);             // r * cos(u) * sin(v)
+                        //make a quad by connecting the points, k1 -> k2 -> k2 + 1 -> k1 + 1
+                        vertex(buffer, pose, state.lightCoords, ilx, ily, lz);
+                        vertex(buffer, pose, state.lightCoords, lx, ly, z);
+                        vertex(buffer, pose, state.lightCoords, x, y, z);
+                        vertex(buffer, pose, state.lightCoords, ix, iy, lz);
                     }else{
                         x = xy * Mth.cos(sectorAngle);             // r * cos(u) * cos(v)
                         y = xy * Mth.sin(sectorAngle);             // r * cos(u) * sin(v)
-                        lx = x;
-                        ly = y;
-                    }
-
-                    // 2 triangles per sector excluding first and last stacks
-                    // k1 => k2 => k1+1
-                    if(latitude != 0) {
-                        vertex(buffer, pose, state.lightCoords, lx, ly, lz);
-                        vertex(buffer, pose, state.lightCoords, lx, ly + y , lz + z);
-                        vertex(buffer, pose, state.lightCoords, lx +x, ly+y, lz);
-                    }
-
-                    // k1+1 => k2 => k2+1
-                    if(latitude != (stackCount-1)) {
-                        vertex(buffer, pose, state.lightCoords, lx +x, ly +y, lz);
-                        vertex(buffer, pose, state.lightCoords, lx, ly + y , lz + z);
-                        vertex(buffer, pose, state.lightCoords, lx + x, ly + y, lz + z);
+                        lVertices.add(longitude,new Pair<>(x, y));
                     }
 
                     // vertex tex coord (s, t) range between [0, 1]
                     s = (float) longitude / sectorCount;
                     t = (float) latitude / stackCount;
                 }
+                vertices = lVertices;
+                lVertices.clear();
             }
+
 
         });
         poseStack.popPose();
