@@ -1,5 +1,6 @@
 package net.s0larj.prismium.entity.renderer;
 
+import com.mojang.blaze3d.Blaze3D;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.Optionull;
@@ -11,9 +12,11 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import net.s0larj.prismium.Prismium;
 import net.s0larj.prismium.entity.custom.SphereEntity;
 import net.s0larj.prismium.entity.state.SphereEntityRenderState;
 import org.joml.Vector4f;
+import org.lwjgl.opengl.GL11;
 import oshi.util.tuples.Pair;
 
 import java.util.ArrayList;
@@ -44,7 +47,7 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
             //all calculations and code for sphere come from https://www.songho.ca/opengl/gl_sphere.html
 
             //radius of sphere
-            int radius = 3;
+            float radius = 5;
 
             //vertex position, xy is the length of the radius along the xy axis, or the bottom of the triangle for spherical coords
             float x= 0;
@@ -71,8 +74,8 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
             float s, t;
 
             //how many sections
-            int sectorCount = 28;
-            int stackCount = 28;
+            int sectorCount = 100;
+            int stackCount = 100;
 
             //divide by how many different sections you want
             float sectorStep = (float) (2 * Math.PI / sectorCount);
@@ -110,14 +113,17 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
                         ily = lVertices.get(longitude - 1).getB();
                         ix = lVertices.get(longitude).getA();
                         iy = lVertices.get(longitude).getB();
+
                         //make a quad by connecting the points, k1 -> k2 -> k2 + 1 -> k1 + 1
                         vertex(buffer, pose, state.lightCoords, ilx, ily, lz);
                         vertex(buffer, pose, state.lightCoords, lx, ly, z);
                         vertex(buffer, pose, state.lightCoords, x, y, z);
                         vertex(buffer, pose, state.lightCoords, ix, iy, lz);
+
+
                     }else{
                         x = xy * Mth.cos(sectorAngle);             // r * cos(u) * cos(v)
-                        y = xy * Mth.sin(sectorAngle);             // r * cos(u) * sin(v)
+                        y = xy * Mth.sin(sectorAngle);             // r * cos(u) * sin(v)6
                         vertices.add(longitude, new Pair<>(x, y));
                     }
 
@@ -125,7 +131,8 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
                     s = (float) longitude / sectorCount;
                     t = (float) latitude / stackCount;
                 }
-                lVertices = vertices;
+                lVertices.clear();
+                lVertices.addAll(vertices);
                 vertices.clear();
             }
 
@@ -137,7 +144,7 @@ public class SphereEntityRenderer extends EntityRenderer<SphereEntity, SphereEnt
 
     private static void vertex(final VertexConsumer builder, final PoseStack.Pose pose, final int lightCoords, final float x, final float y, final float z) {
         builder.addVertex(pose.pose(), x, y, z)
-                .setColor(-1)
+                .setColor(0, 0, 255, 255)
                 .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(lightCoords);
     }

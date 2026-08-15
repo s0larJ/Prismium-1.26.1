@@ -23,7 +23,7 @@ public class ModEntityTypes {
     public static final EntityType<SphereEntity> SPHERE_ENTITY = registerEntity(
             "sphere_entity",
             EntityType.Builder.<SphereEntity>of(SphereEntity::new, MobCategory.MISC)
-                    .sized(0.1f, 0.1f)
+                    .sized(1f, 1f)
     );
 
     private static <T extends Entity> EntityType<T> registerEntity (String name, EntityType.Builder<T> builder) {
